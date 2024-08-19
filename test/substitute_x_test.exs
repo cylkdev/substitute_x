@@ -3,174 +3,142 @@ defmodule SubstituteXTest do
   doctest SubstituteX
 
   describe "compare?/3: " do
-    test "integer" do
-      # The term on the left equals the term on the right
+    test "integer on the left is equal to integer on the right" do
       assert SubstituteX.compare?(1, :===, 1)
 
-      # The term on the left does not equal the term on the right
-      refute SubstituteX.compare?(1, :===, [])
+      assert SubstituteX.compare?(1, :eq, 1)
+    end
 
-      # The number on the left is greater than the number on the right
+    test "integer on the left is not equal to integer on the right" do
+      refute SubstituteX.compare?(1, :===, 2)
+    end
+
+    test "integer on the left is greater than integer on the right" do
       assert SubstituteX.compare?(2, :>, 1)
 
-      # The number on the left is not greater than the number on the right
-      refute SubstituteX.compare?(1, :>, 2)
+      assert SubstituteX.compare?(2, :gt, 1)
+    end
 
-      # The number on the left is less than the number on the right
+    test "integer on the left is less than integer on the right" do
       assert SubstituteX.compare?(1, :<, 2)
 
-      # The number on the left is not less than the number on the right
-      refute SubstituteX.compare?(2, :<, 1)
+      assert SubstituteX.compare?(1, :lt, 2)
+    end
 
-      # The number on the left is equal to or greater than the number on the right
+    test "integer on the left is equal to or greater than integer on the right" do
+      assert SubstituteX.compare?(2, :>=, 2)
+
       assert SubstituteX.compare?(2, :>=, 1)
 
-      # The number on the left is not equal to or greater than the number on the right
-      refute SubstituteX.compare?(1, :>=, 2)
+      assert SubstituteX.compare?(2, :gte, 1)
+    end
 
-      # The number on the left is equal to or less than the number on the right
+    test "integer on the left is equal to or less than integer on the right" do
+      assert SubstituteX.compare?(2, :<=, 2)
+
       assert SubstituteX.compare?(1, :<=, 2)
 
-      # The number on the left is not equal to or less than the number on the right
-      refute SubstituteX.compare?(2, :<=, 1)
-
-      # The term on the left equals the term on the right
-      assert SubstituteX.compare?(1, :eq, 1)
-
-      # The term on the left does not equal the term on the right
-      refute SubstituteX.compare?(1, :eq, [])
-
-      # The number on the left is greater than the number on the right
-      assert SubstituteX.compare?(2, :gt, 1)
-
-      # The number on the left is not greater than the number on the right
-      refute SubstituteX.compare?(1, :gt, 2)
-
-      # The number on the left is less than the number on the right
-      assert SubstituteX.compare?(1, :lt, 2)
-
-      # The number on the left is not less than the number on the right
-      refute SubstituteX.compare?(2, :lt, 1)
+      assert SubstituteX.compare?(1, :lte, 2)
     end
 
-    test "string" do
-      # The term on the left matches the string on the right
+    test "string on the left is equal to string on the right" do
       assert SubstituteX.compare?("foo", :===, "foo")
-
-      # The term on the left does not match the string on the right
-      refute SubstituteX.compare?("foo", :===, "not_a_match")
-
-      # The term on the left matches the string on the right
-      assert SubstituteX.compare?("foo", :=~, "foo")
-
-      # The term on the left does not match the string on the right
-      refute SubstituteX.compare?("foo", :=~, "not_a_match")
-
-      # The term on the left matches the regular expression on the right
-      assert SubstituteX.compare?("foo", :=~, ~r|foo|)
-
-      # The term on the left does not match the regular expression on the right
-      refute SubstituteX.compare?("foo", :=~, ~r|not_a_match|)
     end
 
-    test "DateTime" do
-      # The term on the left equals the term on the right
+    test "string on the left is not equal to string on the right" do
+      refute SubstituteX.compare?("foo", :===, "bar")
+    end
+
+    test "string on the left is greater than the string on the right" do
+      assert SubstituteX.compare?("foo", :>, "fo")
+
+      assert SubstituteX.compare?("foo", :gt, "fo")
+    end
+
+    test "string on the left is less than the string on the right" do
+      assert SubstituteX.compare?("foo", :<, "foobar")
+
+      assert SubstituteX.compare?("foo", :lt, "foobar")
+    end
+
+    test "string on the left is equal to or greater than the string on the right" do
+      assert SubstituteX.compare?("foo", :<=, "foo")
+
+      assert SubstituteX.compare?("foo", :>=, "fo")
+
+      assert SubstituteX.compare?("foo", :gte, "fo")
+    end
+
+    test "string on the left is equal to or less than the string on the right" do
+      assert SubstituteX.compare?("foo", :<=, "foo")
+
+      assert SubstituteX.compare?("foo", :<=, "foobar")
+
+      assert SubstituteX.compare?("foo", :lte, "foobar")
+    end
+
+    test "string on the left matches string on the right" do
+      assert SubstituteX.compare?("foo", :=~, "fo")
+    end
+
+    test "string on the left matches regex on the right" do
+      assert SubstituteX.compare?("foo", :=~, ~r|fo|)
+    end
+
+    test "datetime on the left is equal to datetime on the right" do
       assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :===, ~U[2024-08-14 00:00:00Z])
+    end
 
-      # The term on the left does not equal the term on the right
-      refute SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :===, [])
-
-      # The datetime on the left is ahead of the datetime on the right
+    test "datetime on the left is greater than datetime on the right" do
       assert SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :>, ~U[2024-08-14 00:00:00Z])
+    end
 
-      # The datetime on the left is not ahead of the datetime on the right
-      refute SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :>, ~U[2024-08-14 01:00:00Z])
-
-      # The datetime on the left is behind the datetime on the right
+    test "datetime on the left is less than datetime on the right" do
       assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :<, ~U[2024-08-14 01:00:00Z])
+    end
 
-      # The datetime on the left is not less than the datetime on the right
-      refute SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :<, ~U[2024-08-14 00:00:00Z])
+    test "datetime on the left is equal to or greater than datetime on the right" do
+      assert SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :>=, ~U[2024-08-14 01:00:00Z])
 
-      # The datetime on the left is equal to or ahead of the datetime on the right
       assert SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :>=, ~U[2024-08-14 00:00:00Z])
 
-      # The datetime on the left is not equal to or ahead of the datetime on the right
-      refute SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :>=, ~U[2024-08-14 01:00:00Z])
-
-      # The datetime on the left is equal to or less than the datetime on the right
-      assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :<=, ~U[2024-08-14 01:00:00Z])
-
-      # The datetime on the left is not equal to or less than the datetime on the right
-      refute SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :<=, ~U[2024-08-14 00:00:00Z])
-
-      # The term on the left equals the term on the right
-      assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :eq, ~U[2024-08-14 00:00:00Z])
-
-      # The term on the left does not equal the term on the right
-      refute SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :eq, [])
-
-      # The datetime on the left is ahead of the datetime on the right
-      assert SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :gt, ~U[2024-08-14 00:00:00Z])
-
-      # The datetime on the left is not ahead of the datetime on the right
-      refute SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :gt, ~U[2024-08-14 01:00:00Z])
-
-      # The datetime on the left is behind the datetime on the right
-      assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :lt, ~U[2024-08-14 01:00:00Z])
-
-      # The datetime on the left is not less than the datetime on the right
-      refute SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :lt, ~U[2024-08-14 00:00:00Z])
+      assert SubstituteX.compare?(~U[2024-08-14 01:00:00Z], :gte, ~U[2024-08-14 00:00:00Z])
     end
 
-    test "NaiveDateTime" do
-      # The term on the left equals the term on the right
+    test "datetime on the left is equal to or less than datetime on the right" do
+      assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :<=, ~U[2024-08-14 00:00:00Z])
+
+      assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :<=, ~U[2024-08-14 01:00:00Z])
+
+      assert SubstituteX.compare?(~U[2024-08-14 00:00:00Z], :lte, ~U[2024-08-14 01:00:00Z])
+    end
+
+    test "naive datetime on the left is equal to naive datetime on the right" do
       assert SubstituteX.compare?(~N[2024-08-14 00:00:00], :===, ~N[2024-08-14 00:00:00])
+    end
 
-      # The term on the left does not equal the term on the right
-      refute SubstituteX.compare?(~N[2024-08-14 00:00:00], :===, [])
-
-      # The naive datetime on the left is ahead of the naive datetime on the right
+    test "naive datetime on the left is greater than naive datetime on the right" do
       assert SubstituteX.compare?(~N[2024-08-14 01:00:00], :>, ~N[2024-08-14 00:00:00])
+    end
 
-      # The naive datetime on the left is not ahead of the naive datetime on the right
-      refute SubstituteX.compare?(~N[2024-08-14 00:00:00], :>, ~N[2024-08-14 01:00:00])
-
-      # The naive datetime on the left is behind the naive datetime on the right
+    test "naive datetime on the left is less than naive datetime on the right" do
       assert SubstituteX.compare?(~N[2024-08-14 00:00:00], :<, ~N[2024-08-14 01:00:00])
+    end
 
-      # The naive datetime on the left is not less than the naive datetime on the right
-      refute SubstituteX.compare?(~N[2024-08-14 01:00:00], :<, ~N[2024-08-14 00:00:00])
+    test "naive datetime on the left is equal to or greater than naive datetime on the right" do
+      assert SubstituteX.compare?(~N[2024-08-14 01:00:00], :>=, ~N[2024-08-14 01:00:00])
 
-      # The naive datetime on the left is equal to or ahead of the naive datetime on the right
       assert SubstituteX.compare?(~N[2024-08-14 01:00:00], :>=, ~N[2024-08-14 00:00:00])
 
-      # The naive datetime on the left is not equal to or ahead of the naive datetime on the right
-      refute SubstituteX.compare?(~N[2024-08-14 00:00:00], :>=, ~N[2024-08-14 01:00:00])
+      assert SubstituteX.compare?(~N[2024-08-14 01:00:00], :gte, ~N[2024-08-14 00:00:00])
+    end
 
-      # The naive datetime on the left is equal to or less than the naive datetime on the right
+    test "naive datetime on the left is equal to or less than naive datetime on the right" do
+      assert SubstituteX.compare?(~N[2024-08-14 00:00:00], :<=, ~N[2024-08-14 00:00:00])
+
       assert SubstituteX.compare?(~N[2024-08-14 00:00:00], :<=, ~N[2024-08-14 01:00:00])
 
-      # The naive datetime on the left is not equal to or less than the naive datetime on the right
-      refute SubstituteX.compare?(~N[2024-08-14 01:00:00], :<=, ~N[2024-08-14 00:00:00])
-
-      # The term on the left equals the term on the right
-      assert SubstituteX.compare?(~N[2024-08-14 00:00:00], :eq, ~N[2024-08-14 00:00:00])
-
-      # The term on the left does not equal the term on the right
-      refute SubstituteX.compare?(~N[2024-08-14 00:00:00], :eq, [])
-
-      # The naive datetime on the left is ahead of the naive datetime on the right
-      assert SubstituteX.compare?(~N[2024-08-14 01:00:00], :gt, ~N[2024-08-14 00:00:00])
-
-      # The naive datetime on the left is not ahead of the naive datetime on the right
-      refute SubstituteX.compare?(~N[2024-08-14 00:00:00], :gt, ~N[2024-08-14 01:00:00])
-
-      # The naive datetime on the left is behind the naive datetime on the right
-      assert SubstituteX.compare?(~N[2024-08-14 00:00:00], :lt, ~N[2024-08-14 01:00:00])
-
-      # The naive datetime on the left is not less than the naive datetime on the right
-      refute SubstituteX.compare?(~N[2024-08-14 01:00:00], :lt, ~N[2024-08-14 00:00:00])
+      assert SubstituteX.compare?(~N[2024-08-14 00:00:00], :lte, ~N[2024-08-14 01:00:00])
     end
   end
 

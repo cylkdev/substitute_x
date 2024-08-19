@@ -48,9 +48,10 @@ defmodule SubstituteX.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.1 or ~> 0.2", only: :dev, runtime: false},
-      {:excoveralls, "~> 0.14.6", only: :test, runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.1", runtime: false},
+      {:excoveralls, "~> 0.14.0", runtime: false},
+      {:dialyxir, "~> 1.0", runtime: false},
+      {:credo, "~> 1.0", runtime: false},
       {:decimal, "> 0.0.0", optional: true}
     ]
   end
@@ -70,7 +71,7 @@ defmodule SubstituteX.MixProject do
       source_url: "https://github.com/cylkdev/substitute_x",
       extras: [
         "CHANGELOG.md": [],
-        "LICENSE.md": [title: "License"],
+        "LICENSE.txt": [title: "License"],
         "README.md": [title: "Readme"]
       ],
       source_url: @source_url,
