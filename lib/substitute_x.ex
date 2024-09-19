@@ -3,308 +3,117 @@ defmodule SubstituteX do
 
   alias SubstituteX.ComparisonEngine
 
-  @behaviour SubstituteX.ComparisonEngine
-
-  @impl true
   @doc """
-  Implements `c:SubstituteX.ComparisonEngine.compare?/3`.
-
-  Returns `true` if `left` compared to `right`
-  by the given operator is `true`.
-
-  * `:===` - Checks if `left` equals `right`.
-    Uses `compare/2` for `DateTime`, `NaiveDateTime`, and `Decimal` structs.
-
-  * `:<` - Checks if `left` is less than `right`.
-    Uses `compare/2` for `DateTime`, `NaiveDateTime`, and `Decimal` structs.
-
-  * `:>` - Checks if `left` is greater than `right`.
-    Uses `compare/2` for `DateTime`, `NaiveDateTime`, and `Decimal` structs.
-
-  * `:<=` - Checks if `left` is less than or equal to `right`.
-    Uses `compare/2` for `DateTime`, `NaiveDateTime`, and `Decimal` structs.
-
-  * `:>=` - Checks if `left` is greater than or equal to `right`.
-    Uses `compare/2` for `DateTime`, `NaiveDateTime`, and `Decimal` structs.
-
-  * `:=~` - Matches `left` against regex or string on `right`.
-
-  * `:eq` - Same as `:===`.
-
-  * `:lt` - Same as `:<`.
-
-  * `:gt` - Same as `:>`.
-
-  * `:lte` - Same as `:<=`.
-
-  * `:gte` - Same as `:>=`.
+  Returns true if the schema matches the term
 
   ### Examples
 
-      # The term on the left equals the term on the right
-      iex> SubstituteX.compare?(1, :===, 1)
+      iex> SubstituteX.compare?("foo", :*)
       true
-  """
-  @spec compare?(left :: term(), operator :: term(), right :: term()) :: boolean()
-  def compare?(%DateTime{} = left, :===, %DateTime{} = right) do
-    DateTime.compare(left, right) === :eq
-  end
 
-  def compare?(%DateTime{} = left, :<, %DateTime{} = right) do
-    DateTime.compare(left, right) === :lt
-  end
+      iex> SubstituteX.compare?(:name, :name)
+      true
 
-  def compare?(%DateTime{} = left, :>, %DateTime{} = right) do
-    DateTime.compare(left, right) === :gt
-  end
+      iex> SubstituteX.compare?(1, 1)
+      true
 
-  def compare?(%DateTime{} = left, :<=, %DateTime{} = right) do
-    compare?(left, :<, right) || compare?(left, :===, right)
-  end
+      iex> SubstituteX.compare?(~U[2024-09-19 04:18:24Z], ~U[2024-09-19 04:18:24Z])
+      true
 
-  def compare?(%DateTime{} = left, :>=, %DateTime{} = right) do
-    compare?(left, :>, right) || compare?(left, :===, right)
-  end
+      iex> SubstituteX.compare?(~U[2024-09-20 04:18:24Z], %{gt: ~U[2024-09-19 04:18:24Z]})
+      true
 
-  def compare?(%DateTime{} = left, :eq, %DateTime{} = right) do
-    compare?(left, :===, right)
-  end
-
-  def compare?(%DateTime{} = left, :lt, %DateTime{} = right) do
-    compare?(left, :<, right)
-  end
-
-  def compare?(%DateTime{} = left, :gt, %DateTime{} = right) do
-    compare?(left, :>, right)
-  end
-
-  def compare?(%DateTime{} = left, :lte, %DateTime{} = right) do
-    compare?(left, :<=, right)
-  end
-
-  def compare?(%DateTime{} = left, :gte, %DateTime{} = right) do
-    compare?(left, :>=, right)
-  end
-
-  def compare?(%NaiveDateTime{} = left, :===, %NaiveDateTime{} = right) do
-    NaiveDateTime.compare(left, right) === :eq
-  end
-
-  def compare?(%NaiveDateTime{} = left, :<, %NaiveDateTime{} = right) do
-    NaiveDateTime.compare(left, right) === :lt
-  end
-
-  def compare?(%NaiveDateTime{} = left, :>, %NaiveDateTime{} = right) do
-    NaiveDateTime.compare(left, right) === :gt
-  end
-
-  def compare?(%NaiveDateTime{} = left, :<=, %NaiveDateTime{} = right) do
-    compare?(left, :<, right) || compare?(left, :===, right)
-  end
-
-  def compare?(%NaiveDateTime{} = left, :>=, %NaiveDateTime{} = right) do
-    compare?(left, :>, right) || compare?(left, :===, right)
-  end
-
-  def compare?(%NaiveDateTime{} = left, :eq, %NaiveDateTime{} = right) do
-    compare?(left, :===, right)
-  end
-
-  def compare?(%NaiveDateTime{} = left, :lt, %NaiveDateTime{} = right) do
-    compare?(left, :<, right)
-  end
-
-  def compare?(%NaiveDateTime{} = left, :gt, %NaiveDateTime{} = right) do
-    compare?(left, :>, right)
-  end
-
-  def compare?(%NaiveDateTime{} = left, :lte, %NaiveDateTime{} = right) do
-    compare?(left, :<=, right)
-  end
-
-  def compare?(%NaiveDateTime{} = left, :gte, %NaiveDateTime{} = right) do
-    compare?(left, :>=, right)
-  end
-
-  if Code.ensure_loaded?(Decimal) do
-    def compare?(%Decimal{} = left, :===, %Decimal{} = right) do
-      Decimal.compare(left, right) === :eq
-    end
-
-    def compare?(%Decimal{} = left, :<, %Decimal{} = right) do
-      Decimal.compare(left, right) === :lt
-    end
-
-    def compare?(%Decimal{} = left, :>, %Decimal{} = right) do
-      Decimal.compare(left, right) === :gt
-    end
-
-    def compare?(%Decimal{} = left, :<=, %Decimal{} = right) do
-      compare?(left, :<, right) || compare?(left, :===, right)
-    end
-
-    def compare?(%Decimal{} = left, :>=, %Decimal{} = right) do
-      compare?(left, :>, right) || compare?(left, :===, right)
-    end
-
-    def compare?(%Decimal{} = left, :eq, %Decimal{} = right) do
-      compare?(left, :===, right)
-    end
-
-    def compare?(%Decimal{} = left, :lt, %Decimal{} = right) do
-      compare?(left, :<, right)
-    end
-
-    def compare?(%Decimal{} = left, :gt, %Decimal{} = right) do
-      compare?(left, :>, right)
-    end
-
-    def compare?(%Decimal{} = left, :lte, %Decimal{} = right) do
-      compare?(left, :<=, right)
-    end
-
-    def compare?(%Decimal{} = left, :gte, %Decimal{} = right) do
-      compare?(left, :>=, right)
-    end
-  end
-
-  def compare?(left, :===, right) do
-    left === right
-  end
-
-  def compare?(left, :=~, right) do
-    left =~ right
-  end
-
-  def compare?(left, :<, right) do
-    left < right
-  end
-
-  def compare?(left, :>, right) do
-    left > right
-  end
-
-  def compare?(left, :<=, right) do
-    left <= right
-  end
-
-  def compare?(left, :>=, right) do
-    left >= right
-  end
-
-  def compare?(left, :eq, right) do
-    compare?(left, :===, right)
-  end
-
-  def compare?(left, :lt, right) do
-    compare?(left, :<, right)
-  end
-
-  def compare?(left, :gt, right) do
-    compare?(left, :>, right)
-  end
-
-  def compare?(left, :lte, right) do
-    compare?(left, :<=, right)
-  end
-
-  def compare?(left, :gte, right) do
-    compare?(left, :>=, right)
-  end
-
-  @doc """
-  Returns true if the schema matches the entire term on the left
-
-  ### Examples
+      iex> SubstituteX.compare?(~N[2024-09-20 04:18:24], %{gt: ~N[2024-09-19 04:18:24]})
+      true
 
       iex> SubstituteX.compare?("foo", "foo")
       true
 
-      iex> SubstituteX.compare?({"foo"}, "foo")
-      true
+      iex> SubstituteX.compare?(%{body: "foo"}, [])
+      false
 
       iex> SubstituteX.compare?(%{body: "foo"}, %{body: "foo"})
       true
 
       iex> SubstituteX.compare?(%{post: %{comments: [%{body: "foo"}]}}, %{post: %{comments: %{body: "foo"}}})
       true
+
+      iex> SubstituteX.compare?(%{body: "foo", likes: 10}, %{body: "foo", likes: 10})
+      true
+
+      iex> SubstituteX.compare?([body: "foo"], %{body: "foo"})
+      true
+
+      iex> SubstituteX.compare?([], [])
+      true
+
+      iex> SubstituteX.compare?([], 1)
+      false
   """
-  def compare?(left, schema) when is_map(schema) do
-    compare?(left, Map.to_list(schema))
+  @spec compare?(left :: any(), right :: any(), opts :: keyword()) :: true | false
+  @spec compare?(left :: any(), right :: any()) :: true | false
+  def compare?(left, right, opts \\ [])
+
+  def compare?(left, params, opts) when is_map(params) and (not is_struct(params)) do
+    compare?(left, Map.to_list(params), opts)
   end
 
-  def compare?(left, schema) when is_tuple(left) do
-    left
-    |> Tuple.to_list()
-    |> compare?(schema)
+  def compare?(left, right, opts) do
+    recurse_compare(left, right, opts)
   end
 
-  def compare?(left, schema) do
-    recurse_compare(left, schema)
-  end
-
-  defp recurse_compare(_left, :*) do
+  defp recurse_compare(_left, :*, _opts) do
     true
   end
 
-  defp recurse_compare(map, arg) when is_map(map) do
-    map
-    |> Map.to_list()
-    |> recurse_compare(arg)
+  defp recurse_compare(map, [head | []], opts) do
+    recurse_compare(map, head, opts)
   end
 
-  defp recurse_compare([], _arg) do
-    false
-  end
-
-  defp recurse_compare([last], arg) do
-    recurse_compare(last, arg)
-  end
-
-  defp recurse_compare([head | tail], arg) do
-    recurse_compare(head, arg) and recurse_compare(tail, arg)
-  end
-
-  defp recurse_compare(_left, []) do
-    true
-  end
-
-  defp recurse_compare(left, [last]) do
-    recurse_compare(left, last)
-  end
-
-  defp recurse_compare(left, [head | tail]) do
-    recurse_compare(left, head) and recurse_compare(left, tail)
-  end
-
-  defp recurse_compare(left, {key, map}) when is_map(map) and not is_struct(map) do
-    recurse_compare(left, {key, Map.to_list(map)})
-  end
-
-  defp recurse_compare(_left, {_key, []}) do
-    true
-  end
-
-  defp recurse_compare(left, {key, [last]}) do
-    recurse_compare(left, {key, last})
-  end
-
-  defp recurse_compare(left, {key, [head | tail]}) do
-    recurse_compare(left, {key, head}) and recurse_compare(left, {key, tail})
-  end
-
-  defp recurse_compare({existing_key, left}, {key, right}) do
-    with true <- existing_key === key do
-      recurse_compare(left, right)
+  defp recurse_compare(map, [head | tail], opts) do
+    with true <- recurse_compare(map, head, opts) do
+      recurse_compare(map, tail, opts)
     end
   end
 
-  defp recurse_compare(left, {operator, right}) do
-    compare?(left, operator, right)
+  defp recurse_compare([{_key, _value} | _tail] = keyword, {key, right}, opts) do
+    if ComparisonEngine.operator?(key, opts) do
+      ComparisonEngine.compare?(keyword, key, right, opts)
+    else
+      case Keyword.get(keyword, key) do
+        nil -> false
+        left -> recurse_compare(left, right, opts)
+      end
+    end
   end
 
-  defp recurse_compare(left, pattern) do
-    compare?(left, :===, pattern)
+  defp recurse_compare([head | []], {key, right}, opts) do
+    recurse_compare(head, {key, right}, opts)
+  end
+
+  defp recurse_compare([head | tail], {key, right}, opts) do
+    with true <- recurse_compare(head, {key, right}, opts) do
+      recurse_compare(tail, {key, right}, opts)
+    end
+  end
+
+  defp recurse_compare(map, {key, right}, opts) do
+    if ComparisonEngine.operator?(key, opts) do
+      ComparisonEngine.compare?(map, key, right, opts)
+    else
+      case Map.get(map, key) do
+        nil -> false
+        left -> recurse_compare(left, right, opts)
+      end
+    end
+  end
+
+  defp recurse_compare(left, right, opts) when is_map(right) and (not is_struct(right)) do
+    recurse_compare(left, Map.to_list(right), opts)
+  end
+
+  defp recurse_compare(left, right, opts) do
+    ComparisonEngine.compare?(left, :===, right, opts)
   end
 
   @doc """
@@ -337,363 +146,289 @@ defmodule SubstituteX do
   ### Examples
 
       iex> SubstituteX.change("hello", :===, "hello", "goodbye")
-      {true, "goodbye"}
+      "goodbye"
 
       iex> SubstituteX.change("hello", :===, "not_a_match", "no_change_will_be_made")
-      {false, "hello"}
-
-      iex> SubstituteX.change("hello", :===, "hello", fn string, _operator, _right -> string <> " world!" end)
-      {true, "hello world!"}
-
-      iex> SubstituteX.change("hello", :===, "hello", fn string -> string <> " world!" end)
-      {true, "hello world!"}
-
-      iex> SubstituteX.change("hello", :===, "hello", fn -> "goodbye" end)
-      {true, "goodbye"}
-  """
-  @spec change(
-    left :: term(),
-    operator :: term(),
-    right :: term(),
-    replacement :: function() | term(),
-    opts :: keyword()
-  ) :: {true | false, term()}
-  def change(left, operator, right, replacement, opts) do
-    if ComparisonEngine.compare?(left, operator, right, opts) do
-      {true, resolve(replacement, left, operator, right)}
-    else
-      {false, left}
-    end
-  end
-
-  @spec change(
-    left :: term(),
-    operator :: term(),
-    right :: term(),
-    replacement :: function() | term()
-  ) :: {true | false, term()}
-  def change(left, operator, right, replacement) do
-    change(left, operator, right, replacement, [])
-  end
-
-  @doc """
-  A simple wrapper for the `change/4` function that returns
-  only the value, without the status tuple. This is useful
-  when you want to change a value and don't need to know
-  if the value was altered.
-
-  ### Examples
-
-      iex> SubstituteX.change!("hello", :===, "hello", "goodbye")
-      "goodbye"
-
-      iex> SubstituteX.change!("hello", :===, "not_a_match", "no_change_will_be_made")
       "hello"
 
-      iex> SubstituteX.change!("hello", :===, "hello", fn string, _operator, _right -> string <> " world!" end)
+      iex> SubstituteX.change("hello", :===, "hello", fn string, _operator, _right -> string <> " world!" end)
       "hello world!"
 
-      iex> SubstituteX.change!("hello", :===, "hello", fn string -> string <> " world!" end)
+      iex> SubstituteX.change("hello", :===, "hello", fn string -> string <> " world!" end)
       "hello world!"
 
-      iex> SubstituteX.change!("hello", :===, "hello", fn -> "goodbye" end)
+      iex> SubstituteX.change("hello", :===, "hello", fn -> "goodbye" end)
       "goodbye"
   """
-  @spec change!(
-    left :: term(),
-    operator :: term(),
-    right :: term(),
-    replacement :: function() | term(),
-    opts :: keyword()
-  ) :: term()
-  def change!(left, operator, right, replacement, opts) do
-    {_changed?, value} = change(left, operator, right, replacement, opts)
-
-    value
-  end
-
-  @spec change!(
-    left :: term(),
-    operator :: term(),
-    right :: term(),
-    replacement :: function() | term()
-  ) :: term()
-  def change!(left, operator, right, replacement) do
-    change!(left, operator, right, replacement, [])
-  end
-
-  @doc """
-  A simple wrapper for the `change/3` function that returns
-  only the value, without the status tuple. This is useful
-  when you want to change a value and don't need to know
-  if the value was altered.
-
-  ### Examples
-
-      iex> SubstituteX.change!("foo", %{"foo" => "bar"})
-      "bar"
-  """
-  @spec change!(
-    term :: term(),
-    schema :: term(),
-    opts :: keyword()
-  ) :: term()
-  def change!(term, schema, opts) do
-    {_changed?, result} = change(term, schema, opts)
-
-    result
-  end
-
-  @spec change!(
-    term :: term(),
-    schema :: term()
-  ) :: term()
-  def change!(term, schema) do
-    change!(term, schema, [])
-  end
-
-  @doc """
-  Transforms a term by schema.
-
-  ### Options
-
-    * `:on_change` - Defines the function's behavior the
-      first time a value is changed. When set to `:halt`,
-      the function immediately returns the result of the
-      change function. If not set to `:halt`, changes
-      are applied in sequence.
-
-  ### Examples
-
-      iex> SubstituteX.change("foo", %{"foo" => "bar"})
-      {true, "bar"}
-
-      iex> SubstituteX.change("foo", [%{"qux" => "bux"}, %{"foo" => "bar"}])
-      {true, "bar"}
-
-      iex> SubstituteX.change("foo", %{"foo" => %{===: "bar"}})
-      {true, "bar"}
-
-      iex> SubstituteX.change({"bar", "foo"}, %{"foo" => "qux"})
-      {true, {"bar", "qux"}}
-
-      iex> SubstituteX.change("foo", {"foo", "bar"})
-      {true, "bar"}
-
-      iex> SubstituteX.change("foo", [{"qux", "bux"}, {"foo", "bar"}])
-      {true, "bar"}
-
-      iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => "bar"}})
-      {true, %{body: "bar"}}
-
-      iex> SubstituteX.change(%{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}}, %{post: %{comments: %{body: %{"foo" => "qux"}}}})
-      {true, %{post: %{comments: [%{body: "qux"}, %{body: "bar"}]}}}
-
-      iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => %{===: "bar"}}})
-      {true, %{body: "bar"}}
-
-      iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => "bar"}})
-      {true, [body: "bar"]}
-
-      iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => %{===: "bar"}}})
-      {true, [body: "bar"]}
-
-      iex> SubstituteX.change([post: [comments: [%{body: "foo"}, %{body: "bar"}]]], %{post: %{comments: %{body: %{"foo" => "qux"}}}})
-      {true, [post: [comments: [%{body: "qux"}, %{body: "bar"}]]]}
-
-      iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, %{body: "bar"}})
-      {true, %{body: "bar"}}
-
-      iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn -> %{body: "bar"} end})
-      {true, %{body: "bar"}}
-
-      iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn %{body: "foo"} -> %{body: "bar"} end})
-      {true, %{body: "bar"}}
-
-      iex> SubstituteX.change(
-      ...>   %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
-      ...>   {
-      ...>     %{post: %{comments: %{body: %{=~: ~r|.*|}}}},
-      ...>     fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
-      ...>   }
-      ...> )
-      {true, %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}}
-
-      iex> SubstituteX.change(
-      ...>   %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
-      ...>   {
-      ...>     %{post: %{comments: %{body: :*}}},
-      ...>     fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
-      ...>   }
-      ...> )
-      {true, %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}}
-  """
   @spec change(
-    term :: term(),
-    schema :: term(),
+    left :: any(),
+    operator :: any(),
+    right :: any(),
+    replacement :: function() | any(),
     opts :: keyword()
-  ) :: {true | false, term()}
-  def change(term, schema, opts) when is_map(schema) do
-    schema = Map.to_list(schema)
+  ) :: any()
+  @spec change(
+    left :: any(),
+    operator :: any(),
+    right :: any(),
+    replacement :: function() | any()
+  ) :: any()
+  def change(left, operator, right, replacement, opts \\ [])
 
-    change(term, schema, opts)
-  end
-
-  def change(term, {schema, replacement}, _opts) do
-    if compare?(term, schema) do
-      {true, resolve(replacement, term)}
+  def change(left, operator, right, replacement, opts) do
+    if ComparisonEngine.compare?(left, operator, right, opts) do
+      replace(replacement, left, operator, right)
     else
-      {false, term}
+      left
     end
   end
 
-  def change(term, [head | _tail] = schemas, opts) when is_map(head) or is_list(head) do
-    Enum.reduce_while(schemas, {false, term}, fn head, {previous_change?, term} ->
-      {changed?, result} = change(term, head, opts)
+  # @doc """
+  # Transforms a term by schema.
 
-      halt_on_change? = opts[:on_change] === :halt
+  # ### Options
 
-      signal = if changed? and halt_on_change?, do: :halt, else: :cont
+  #   * `:on_change` - Defines the function's behavior the
+  #     first time a value is changed. When set to `:halt`,
+  #     the function immediately returns the result of the
+  #     change function. If not set to `:halt`, changes
+  #     are applied in sequence.
 
-      {signal, {previous_change? || changed?, result}}
-    end)
+  # ### Examples
+
+  #     iex> SubstituteX.change("foo", %{"foo" => "bar"})
+  #     "bar"
+
+  #     iex> SubstituteX.change("foo", [%{"qux" => "bux"}, %{"foo" => "bar"}])
+  #     "bar"
+
+  #     iex> SubstituteX.change("foo", %{"foo" => %{===: "bar"}})
+  #     "bar"
+
+  #     iex> SubstituteX.change("foo", [{"qux", "bux"}, {"foo", "bar"}])
+  #     "bar"
+
+  #     iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => "bar"}})
+  #     %{body: "bar"}
+
+  #     iex> SubstituteX.change(%{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}}, %{post: %{comments: %{body: %{"foo" => "qux"}}}})
+  #     %{post: %{comments: [%{body: "qux"}, %{body: "bar"}]}}
+
+  #     iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => %{===: "bar"}}})
+  #     %{body: "bar"}
+
+  #     iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => "bar"}})
+  #     [body: "bar"]
+
+  #     iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => %{===: "bar"}}})
+  #     [body: "bar"]
+
+  #     iex> SubstituteX.change([post: [comments: [%{body: "foo"}, %{body: "bar"}]]], %{post: %{comments: %{body: %{"foo" => "qux"}}}})
+  #     [post: [comments: [%{body: "qux"}, %{body: "bar"}]]]
+
+  #     iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, %{body: "bar"}})
+  #     %{body: "bar"}
+
+  #     iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn -> %{body: "bar"} end})
+  #     %{body: "bar"}
+
+  #     iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn %{body: "foo"} -> %{body: "bar"} end})
+  #     %{body: "bar"}
+
+  #     iex> SubstituteX.change(
+  #     ...>   %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
+  #     ...>   {
+  #     ...>     %{post: %{comments: %{body: %{=~: ~r|.*|}}}},
+  #     ...>     fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
+  #     ...>   }
+  #     ...> )
+  #     %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}
+
+  #     iex> SubstituteX.change(
+  #     ...>   %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
+  #     ...>   {
+  #     ...>     %{post: %{comments: %{body: :*}}},
+  #     ...>     fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
+  #     ...>   }
+  #     ...> )
+  #     %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}
+  # """
+  # @spec change(
+  #   left :: any(),
+  #   schema :: map() | {map(), function() | any()},
+  #   opts :: keyword()
+  # ) :: any()
+  # @spec change(
+  #   left :: any(),
+  #   schema :: map() | {map(), function() | any()}
+  # ) :: any()
+  # def change(left, schema, opts \\ [])
+
+  # def change(left, {schema, replacement}, _opts) do
+  #   if compare?(left, schema) do
+  #     replace(replacement, left)
+  #   else
+  #     left
+  #   end
+  # end
+
+  # def change(left, schema, opts) when is_map(schema) do
+  #   schema = Map.to_list(schema)
+
+  #   change(left, schema, opts)
+  # end
+
+
+  # def change(left, [head | _tail] = schemas, opts) when is_map(head) or is_list(head) do
+  #   Enum.reduce_while(schemas, {false, left}, fn head, {previous_change?, left} ->
+  #     {changed?, result} = change(left, head, opts)
+
+  #     halt_on_change? = opts[:on_change] === :halt
+
+  #     signal = if changed? and halt_on_change?, do: :halt, else: :cont
+
+  #     {signal, {previous_change? || changed?, result}}
+  #   end)
+  # end
+
+  # def change(left, schema, opts) do
+  #   recurse_change({false, left}, schema, opts)
+  # end
+
+  # def change(left, schema) do
+  #   change(left, schema, [])
+  # end
+
+  # defp recurse_change({changed?, []}, _value, _opts) do
+  #   {changed?, []}
+  # end
+
+  # defp recurse_change({changed?, [head | tail]}, value, opts) do
+  #   {changed?, result} = recurse_change({changed?, head}, value, opts)
+
+  #   halt_on_change? = opts[:on_change] === :halt
+
+  #   if changed? and halt_on_change? do
+  #     {changed?, [result | tail]}
+  #   else
+  #     {changed?, rest} = recurse_change({changed?, tail}, arg, opts)
+
+  #     {changed?, [result | rest]}
+  #   end
+  # end
+
+  # defp recurse_change({changed?, left}, [], _opts) do
+  #   {changed?, left}
+  # end
+
+  # defp recurse_change({changed?, left}, [head | tail], opts) do
+  #   {changed?, result} = recurse_change({changed?, left}, head, opts)
+
+  #   halt_on_change? = opts[:on_change] === :halt
+
+  #   if changed? and halt_on_change? do
+  #     {changed?, result}
+  #   else
+  #     recurse_change({changed?, result}, tail, opts)
+  #   end
+  # end
+
+  # defp recurse_change({changed?, left}, {right, map}, opts) when is_map(map) and not is_struct(map) do
+  #   recurse_change(
+  #     {changed?, left},
+  #     {right, Map.to_list(map)},
+  #     opts
+  #   )
+  # end
+
+  # defp recurse_change({changed?, left}, {_right, []}, _opts) do
+  #   {changed?, left}
+  # end
+
+  # defp recurse_change({changed?, left}, {right, [head | tail]}, opts) do
+  #   {changed?, result} = recurse_change({changed?, left}, {right, head}, opts)
+
+  #   halt_on_change? = opts[:on_change] === :halt
+
+  #   if changed? and halt_on_change? do
+  #     {changed?, result}
+  #   else
+  #     recurse_change({changed?, result}, {right, tail}, opts)
+  #   end
+  # end
+
+  # defp recurse_change({previous_change?, map}, {key, arg}, opts) when is_map(map) and not is_struct(map) do
+  #   require IEx; IEx.pry()
+
+  #   left = Map.get(map, key)
+
+  #   {changed?, result} = change(left, arg, opts)
+
+  #   {previous_change? || changed?, Map.put(map, key, result)}
+  # end
+
+  # defp recurse_change({change?, {existing_key, left}}, {key, arg}, opts) do
+  #   if existing_key === key do
+  #     {change?, result} = recurse_change({change?, left}, arg, opts)
+
+  #     {change?, {existing_key, result}}
+  #   else
+  #     {change?, {existing_key, left}}
+  #   end
+  # end
+
+  # defp recurse_change(
+  #   {_changed?, left},
+  #   {right, {operator, replacement}},
+  #   opts
+  # ) do
+  #   if operator === :* do
+  #     {true, replace(replacement, left, operator, right)}
+  #   else
+  #     operator = opts[:operator] || operator
+  #     replacement = opts[:replacement] || replacement
+
+  #     change(left, operator, right, replacement)
+  #   end
+  # end
+
+  # defp recurse_change({changed?, left}, {right, replacement}, opts) do
+  #   recurse_change(
+  #     {changed?, left},
+  #     {right, {:===, replacement}},
+  #     opts
+  #   )
+  # end
+
+  defp replace(replacement, left, operator, right) when is_function(replacement, 3) do
+    replacement.(left, operator, right)
   end
 
-  def change(tuple, schema, opts) when is_tuple(tuple) do
-    with {changed?, result} <- tuple |> Tuple.to_list() |> change(schema, opts) do
-      {changed?, List.to_tuple(result)}
-    end
+  defp replace(replacement, left, operator, _right) when is_function(replacement, 2) do
+    replacement.(left, operator)
   end
 
-  def change(term, schema, opts) do
-    opts = Keyword.put_new(opts, :on_change, :halt)
-
-    recurse_change({false, term}, schema, opts)
+  defp replace(replacement, left, _operator, _right) when is_function(replacement, 1) do
+    replacement.(left)
   end
 
-  def change(term, schema) do
-    change(term, schema, [])
+  defp replace(replacement, _left, _operator, _right) when is_function(replacement, 0) do
+    replacement.()
   end
 
-  defp recurse_change({changed?, []}, _arg, _opts) do
-    {changed?, []}
+  defp replace(replacement, _left, _operator, _right) do
+    replacement
   end
 
-  defp recurse_change({changed?, [head | tail]}, arg, opts) do
-    {changed?, result} = recurse_change({changed?, head}, arg, opts)
+  # defp replace(replacement, left) when is_function(replacement, 1) do
+  #   replacement.(left)
+  # end
 
-    halt_on_change? = opts[:on_change] === :halt
+  # defp replace(replacement, _left) when is_function(replacement, 0) do
+  #   replacement.()
+  # end
 
-    if changed? and halt_on_change? do
-      {changed?, [result | tail]}
-    else
-      {changed?, rest} = recurse_change({changed?, tail}, arg, opts)
-
-      {changed?, [result | rest]}
-    end
-  end
-
-  defp recurse_change({changed?, term}, [], _opts) do
-    {changed?, term}
-  end
-
-  defp recurse_change({changed?, term}, [head | tail], opts) do
-    {changed?, result} = recurse_change({changed?, term}, head, opts)
-
-    halt_on_change? = opts[:on_change] === :halt
-
-    if changed? and halt_on_change? do
-      {changed?, result}
-    else
-      recurse_change({changed?, result}, tail, opts)
-    end
-  end
-
-  defp recurse_change({changed?, term}, {right, map}, opts)
-    when is_map(map) and not is_struct(map) do
-    recurse_change(
-      {changed?, term},
-      {right, Map.to_list(map)},
-      opts
-    )
-  end
-
-  defp recurse_change({changed?, term}, {_right, []}, _opts) do
-    {changed?, term}
-  end
-
-  defp recurse_change({changed?, term}, {right, [head | tail]}, opts) do
-    {changed?, result} = recurse_change({changed?, term}, {right, head}, opts)
-
-    halt_on_change? = opts[:on_change] === :halt
-
-    if changed? and halt_on_change? do
-      {changed?, result}
-    else
-      recurse_change({changed?, result}, {right, tail}, opts)
-    end
-  end
-
-  defp recurse_change({changed?, map}, {key, arg}, opts) when is_map(map) and not is_struct(map) do
-    case Map.get(map, key) do
-      nil ->
-        {changed?, map}
-
-      term ->
-        {changed?, result} = recurse_change({false, term}, arg, opts)
-
-        {changed?, Map.put(map, key, result)}
-    end
-  end
-
-  defp recurse_change({change?, {existing_key, term}}, {key, arg}, opts) do
-    if existing_key === key do
-      {change?, result} = recurse_change({change?, term}, arg, opts)
-
-      {change?, {existing_key, result}}
-    else
-      {change?, {existing_key, term}}
-    end
-  end
-
-  defp recurse_change(
-    {_changed?, term},
-    {right, {operator, replacement}},
-    opts
-  ) do
-    if operator === :* do
-      {true, resolve(replacement, term, operator, right)}
-    else
-      operator = opts[:operator] || operator
-      replacement = opts[:replacement] || replacement
-
-      change(term, operator, right, replacement)
-    end
-  end
-
-  defp recurse_change({changed?, term}, {right, replacement}, opts) do
-    recurse_change(
-      {changed?, term},
-      {right, {:===, replacement}},
-      opts
-    )
-  end
-
-  defp resolve(replacement, term) do
-    cond do
-      is_function(replacement, 1) -> replacement.(term)
-      is_function(replacement) -> replacement.()
-      true -> replacement
-    end
-  end
-
-  defp resolve(replacement, term, operator, right) do
-    cond do
-      is_function(replacement, 3) -> replacement.(term, operator, right)
-      is_function(replacement, 2) -> replacement.(term, operator)
-      is_function(replacement, 1) -> replacement.(term)
-      is_function(replacement) -> replacement.()
-      true -> replacement
-    end
-  end
+  # defp replace(replacement, _left) do
+  #   replacement
+  # end
 end

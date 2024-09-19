@@ -25,15 +25,13 @@ defmodule SubstituteX.MixProject do
         "coveralls.post": :test
       ],
       dialyzer: [
-        plt_add_apps: [
-          :ex_unit,
-          :decimal,
-          :mix
-        ],
-        list_unused_filters: true,
+        plt_add_apps: [:ex_unit, :decimal, :mix],
         plt_local_path: "dialyzer",
         plt_core_path: "dialyzer",
-        flags: [:unmatched_returns]
+        plt_ignore_apps: [],
+        list_unused_filters: true,
+        ignore_warnings: ".dialyzer-ignore.exs",
+        flags: [:unmatched_returns, :no_improper_lists]
       ]
     ]
   end
