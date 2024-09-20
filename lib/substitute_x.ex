@@ -272,10 +272,14 @@ defmodule SubstituteX do
   ) :: any()
   def change(left, params, opts \\ [])
 
-  def change(left, list_of_params, opts) when is_list(list_of_params) do
-    Enum.reduce(list_of_params, left, fn params, left ->
-      change(left, params, opts)
-    end)
+  def change(left, params_list, opts) when is_list(params_list) do
+    if Keyword.keyword?(params_list) do
+      change(left, params_list, opts)
+    else
+      Enum.reduce(params_list, left, fn params, left ->
+        change(left, params, opts)
+      end)
+    end
   end
 
   def change(left, {params, replacement}, opts) do
