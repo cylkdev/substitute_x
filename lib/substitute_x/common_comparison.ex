@@ -6,7 +6,7 @@ defmodule SubstituteX.CommonComparison do
 
   @behaviour ComparisonEngine
 
-  @operators ~w(=== < > <= >= =~ eq lt gt lte gte)a
+  @operators ~w(=== !== < > <= >= =~ eq lt gt lte gte)a
 
   @impl ComparisonEngine
   @doc """
@@ -15,7 +15,7 @@ defmodule SubstituteX.CommonComparison do
   ### Examples
 
       iex> SubstituteX.CommonComparison.operators()
-      [:===, :<, :>, :<=, :>=, :=~, :eq, :lt, :gt, :lte, :gte]
+      [:===, :!==, :<, :>, :<=, :>=, :=~, :eq, :lt, :gt, :lte, :gte]
   """
   @spec operators :: list()
   def operators, do: @operators
@@ -27,6 +27,7 @@ defmodule SubstituteX.CommonComparison do
   The following operators are supported:
 
     * `:===`
+    * `:!==`
     * `:<`
     * `:>`
     * `:<=`
@@ -41,6 +42,9 @@ defmodule SubstituteX.CommonComparison do
   ### Examples
 
       iex> SubstituteX.CommonComparison.operator?(:===)
+      true
+
+      iex> SubstituteX.CommonComparison.operator?(:!==)
       true
 
       iex> SubstituteX.CommonComparison.operator?(:<)
@@ -77,6 +81,7 @@ defmodule SubstituteX.CommonComparison do
       false
   """
   @spec operator?(operator :: atom()) :: true | false
+  def operator?(:!==), do: true
   def operator?(:===), do: true
   def operator?(:<), do: true
   def operator?(:>), do: true
@@ -96,7 +101,10 @@ defmodule SubstituteX.CommonComparison do
 
   The following operations are supported:
 
-    * `:===` - Checks if `left` equals `right`.
+    * `:===` - Checks if `left` equal `right`.
+      Uses `compare/2` for `DateTime`, `NaiveDateTime`, and `Decimal` structs.
+
+      * `:===` - Checks if `left` does not equal `right`.
       Uses `compare/2` for `DateTime`, `NaiveDateTime`, and `Decimal` structs.
 
     * `:<` - Checks if `left` is less than `right`.
@@ -125,174 +133,189 @@ defmodule SubstituteX.CommonComparison do
 
   ### Examples
 
-      # The term on the left equals the term on the right
-      iex> SubstituteX.CommonComparison.compare?(1, :===, 1)
+      iex> SubstituteX.CommonComparison.matches?(1, :===, 1)
       true
   """
-  @spec compare?(left :: any(), operator :: any(), right :: any()) :: boolean()
-  def compare?(%DateTime{} = left, :===, %DateTime{} = right) do
+  @spec matches?(left :: any(), operator :: any(), right :: any()) :: boolean()
+  def matches?(%DateTime{} = left, :===, %DateTime{} = right) do
     DateTime.compare(left, right) === :eq
   end
 
-  def compare?(%DateTime{} = left, :<, %DateTime{} = right) do
+  def matches?(%DateTime{} = left, :!==, %DateTime{} = right) do
+    DateTime.compare(left, right) !== :eq
+  end
+
+  def matches?(%DateTime{} = left, :<, %DateTime{} = right) do
     DateTime.compare(left, right) === :lt
   end
 
-  def compare?(%DateTime{} = left, :>, %DateTime{} = right) do
+  def matches?(%DateTime{} = left, :>, %DateTime{} = right) do
     DateTime.compare(left, right) === :gt
   end
 
-  def compare?(%DateTime{} = left, :<=, %DateTime{} = right) do
-    compare?(left, :<, right) || compare?(left, :===, right)
+  def matches?(%DateTime{} = left, :<=, %DateTime{} = right) do
+    matches?(left, :<, right) || matches?(left, :===, right)
   end
 
-  def compare?(%DateTime{} = left, :>=, %DateTime{} = right) do
-    compare?(left, :>, right) || compare?(left, :===, right)
+  def matches?(%DateTime{} = left, :>=, %DateTime{} = right) do
+    matches?(left, :>, right) || matches?(left, :===, right)
   end
 
-  def compare?(%DateTime{} = left, :eq, %DateTime{} = right) do
-    compare?(left, :===, right)
+  def matches?(%DateTime{} = left, :eq, %DateTime{} = right) do
+    matches?(left, :===, right)
   end
 
-  def compare?(%DateTime{} = left, :lt, %DateTime{} = right) do
-    compare?(left, :<, right)
+  def matches?(%DateTime{} = left, :lt, %DateTime{} = right) do
+    matches?(left, :<, right)
   end
 
-  def compare?(%DateTime{} = left, :gt, %DateTime{} = right) do
-    compare?(left, :>, right)
+  def matches?(%DateTime{} = left, :gt, %DateTime{} = right) do
+    matches?(left, :>, right)
   end
 
-  def compare?(%DateTime{} = left, :lte, %DateTime{} = right) do
-    compare?(left, :<=, right)
+  def matches?(%DateTime{} = left, :lte, %DateTime{} = right) do
+    matches?(left, :<=, right)
   end
 
-  def compare?(%DateTime{} = left, :gte, %DateTime{} = right) do
-    compare?(left, :>=, right)
+  def matches?(%DateTime{} = left, :gte, %DateTime{} = right) do
+    matches?(left, :>=, right)
   end
 
-  def compare?(%NaiveDateTime{} = left, :===, %NaiveDateTime{} = right) do
+  def matches?(%NaiveDateTime{} = left, :===, %NaiveDateTime{} = right) do
     NaiveDateTime.compare(left, right) === :eq
   end
 
-  def compare?(%NaiveDateTime{} = left, :<, %NaiveDateTime{} = right) do
+  def matches?(%NaiveDateTime{} = left, :!==, %NaiveDateTime{} = right) do
+    NaiveDateTime.compare(left, right) !== :eq
+  end
+
+  def matches?(%NaiveDateTime{} = left, :<, %NaiveDateTime{} = right) do
     NaiveDateTime.compare(left, right) === :lt
   end
 
-  def compare?(%NaiveDateTime{} = left, :>, %NaiveDateTime{} = right) do
+  def matches?(%NaiveDateTime{} = left, :>, %NaiveDateTime{} = right) do
     NaiveDateTime.compare(left, right) === :gt
   end
 
-  def compare?(%NaiveDateTime{} = left, :<=, %NaiveDateTime{} = right) do
-    compare?(left, :<, right) || compare?(left, :===, right)
+  def matches?(%NaiveDateTime{} = left, :<=, %NaiveDateTime{} = right) do
+    matches?(left, :<, right) || matches?(left, :===, right)
   end
 
-  def compare?(%NaiveDateTime{} = left, :>=, %NaiveDateTime{} = right) do
-    compare?(left, :>, right) || compare?(left, :===, right)
+  def matches?(%NaiveDateTime{} = left, :>=, %NaiveDateTime{} = right) do
+    matches?(left, :>, right) || matches?(left, :===, right)
   end
 
-  def compare?(%NaiveDateTime{} = left, :eq, %NaiveDateTime{} = right) do
-    compare?(left, :===, right)
+  def matches?(%NaiveDateTime{} = left, :eq, %NaiveDateTime{} = right) do
+    matches?(left, :===, right)
   end
 
-  def compare?(%NaiveDateTime{} = left, :lt, %NaiveDateTime{} = right) do
-    compare?(left, :<, right)
+  def matches?(%NaiveDateTime{} = left, :lt, %NaiveDateTime{} = right) do
+    matches?(left, :<, right)
   end
 
-  def compare?(%NaiveDateTime{} = left, :gt, %NaiveDateTime{} = right) do
-    compare?(left, :>, right)
+  def matches?(%NaiveDateTime{} = left, :gt, %NaiveDateTime{} = right) do
+    matches?(left, :>, right)
   end
 
-  def compare?(%NaiveDateTime{} = left, :lte, %NaiveDateTime{} = right) do
-    compare?(left, :<=, right)
+  def matches?(%NaiveDateTime{} = left, :lte, %NaiveDateTime{} = right) do
+    matches?(left, :<=, right)
   end
 
-  def compare?(%NaiveDateTime{} = left, :gte, %NaiveDateTime{} = right) do
-    compare?(left, :>=, right)
+  def matches?(%NaiveDateTime{} = left, :gte, %NaiveDateTime{} = right) do
+    matches?(left, :>=, right)
   end
 
   if Code.ensure_loaded?(Decimal) do
-    def compare?(%Decimal{} = left, :===, %Decimal{} = right) do
+    def matches?(%Decimal{} = left, :===, %Decimal{} = right) do
       Decimal.compare(left, right) === :eq
     end
 
-    def compare?(%Decimal{} = left, :<, %Decimal{} = right) do
+    def matches?(%Decimal{} = left, :!==, %Decimal{} = right) do
+      Decimal.compare(left, right) !== :eq
+    end
+
+    def matches?(%Decimal{} = left, :<, %Decimal{} = right) do
       Decimal.compare(left, right) === :lt
     end
 
-    def compare?(%Decimal{} = left, :>, %Decimal{} = right) do
+    def matches?(%Decimal{} = left, :>, %Decimal{} = right) do
       Decimal.compare(left, right) === :gt
     end
 
-    def compare?(%Decimal{} = left, :<=, %Decimal{} = right) do
-      compare?(left, :<, right) || compare?(left, :===, right)
+    def matches?(%Decimal{} = left, :<=, %Decimal{} = right) do
+      matches?(left, :<, right) || matches?(left, :===, right)
     end
 
-    def compare?(%Decimal{} = left, :>=, %Decimal{} = right) do
-      compare?(left, :>, right) || compare?(left, :===, right)
+    def matches?(%Decimal{} = left, :>=, %Decimal{} = right) do
+      matches?(left, :>, right) || matches?(left, :===, right)
     end
 
-    def compare?(%Decimal{} = left, :eq, %Decimal{} = right) do
-      compare?(left, :===, right)
+    def matches?(%Decimal{} = left, :eq, %Decimal{} = right) do
+      matches?(left, :===, right)
     end
 
-    def compare?(%Decimal{} = left, :lt, %Decimal{} = right) do
-      compare?(left, :<, right)
+    def matches?(%Decimal{} = left, :lt, %Decimal{} = right) do
+      matches?(left, :<, right)
     end
 
-    def compare?(%Decimal{} = left, :gt, %Decimal{} = right) do
-      compare?(left, :>, right)
+    def matches?(%Decimal{} = left, :gt, %Decimal{} = right) do
+      matches?(left, :>, right)
     end
 
-    def compare?(%Decimal{} = left, :lte, %Decimal{} = right) do
-      compare?(left, :<=, right)
+    def matches?(%Decimal{} = left, :lte, %Decimal{} = right) do
+      matches?(left, :<=, right)
     end
 
-    def compare?(%Decimal{} = left, :gte, %Decimal{} = right) do
-      compare?(left, :>=, right)
+    def matches?(%Decimal{} = left, :gte, %Decimal{} = right) do
+      matches?(left, :>=, right)
     end
   end
 
-  def compare?(left, :===, right) do
+  def matches?(left, :===, right) do
     left === right
   end
 
-  def compare?(left, :=~, right) do
+  def matches?(left, :!==, right) do
+    left !== right
+  end
+
+  def matches?(left, :=~, right) do
     left =~ right
   end
 
-  def compare?(left, :<, right) do
+  def matches?(left, :<, right) do
     left < right
   end
 
-  def compare?(left, :>, right) do
+  def matches?(left, :>, right) do
     left > right
   end
 
-  def compare?(left, :<=, right) do
+  def matches?(left, :<=, right) do
     left <= right
   end
 
-  def compare?(left, :>=, right) do
+  def matches?(left, :>=, right) do
     left >= right
   end
 
-  def compare?(left, :eq, right) do
-    compare?(left, :===, right)
+  def matches?(left, :eq, right) do
+    matches?(left, :===, right)
   end
 
-  def compare?(left, :lt, right) do
-    compare?(left, :<, right)
+  def matches?(left, :lt, right) do
+    matches?(left, :<, right)
   end
 
-  def compare?(left, :gt, right) do
-    compare?(left, :>, right)
+  def matches?(left, :gt, right) do
+    matches?(left, :>, right)
   end
 
-  def compare?(left, :lte, right) do
-    compare?(left, :<=, right)
+  def matches?(left, :lte, right) do
+    matches?(left, :<=, right)
   end
 
-  def compare?(left, :gte, right) do
-    compare?(left, :>=, right)
+  def matches?(left, :gte, right) do
+    matches?(left, :>=, right)
   end
 end

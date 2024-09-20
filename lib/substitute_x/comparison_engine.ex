@@ -15,6 +15,8 @@ defmodule SubstituteX.ComparisonEngine do
   """
   alias SubstituteX.Config
 
+  @logger_prefix "SubstituteX.ComparisonEngine"
+
   @default_adapter SubstituteX.CommonComparison
 
   @doc """
@@ -43,7 +45,7 @@ defmodule SubstituteX.ComparisonEngine do
 
   Returns a boolean.
   """
-  @callback compare?(left :: term(), operator :: term(), right :: term()) :: true | false
+  @callback matches?(left :: term(), operator :: term(), right :: term()) :: true | false
 
   @doc """
   Executes `c:SubstituteX.ComparisonEngine.operator?/1`.
@@ -55,7 +57,7 @@ defmodule SubstituteX.ComparisonEngine do
   ### Examples
 
       iex> SubstituteX.ComparisonEngine.operators()
-      [:===, :<, :>, :<=, :>=, :=~, :eq, :lt, :gt, :lte, :gte]
+      [:===, :!==, :<, :>, :<=, :>=, :=~, :eq, :lt, :gt, :lte, :gte]
   """
   @spec operators(opts :: keyword()) :: true | false
   @spec operators() :: true | false
@@ -78,11 +80,22 @@ defmodule SubstituteX.ComparisonEngine do
   @spec operator?(operator :: atom(), opts :: keyword()) :: true | false
   @spec operator?(operator :: atom()) :: true | false
   def operator?(operator, opts \\ []) do
-    adapter!(opts).operator?(operator)
+    adapter = adapter!(opts)
+
+    operator? = adapter.operator?(operator)
+
+    unless operator? do
+      SubstituteX.Utils.Logger.warning(
+        @logger_prefix,
+        "The operator '#{inspect(operator)}' is not supported by '#{inspect(adapter)}'."
+      )
+    end
+
+    operator?
   end
 
   @doc """
-  Executes `c:SubstituteX.ComparisonEngine.compare?/3`.
+  Executes `c:SubstituteX.ComparisonEngine.matches?/3`.
 
   ### Options
 
@@ -90,25 +103,28 @@ defmodule SubstituteX.ComparisonEngine do
 
   ### Examples
 
-      iex> SubstituteX.ComparisonEngine.compare?("snow", :===, "snow")
+      iex> SubstituteX.ComparisonEngine.matches?("snow", :===, "snow")
       true
   """
-  @spec compare?(
+  @spec matches?(
     left :: term(),
     operator :: term(),
     right :: term(),
     opts :: keyword()
   ) :: true | false
-  @spec compare?(
+  @spec matches?(
     left :: term(),
     operator :: term(),
     right :: term()
   ) :: true | false
-  def compare?(left, operator, right, opts \\ []) do
-    adapter!(opts).compare?(left, operator, right)
+  def matches?(left, operator, right, opts \\ []) do
+    adapter!(opts).matches?(left, operator, right)
   end
 
   defp adapter!(opts) do
-    opts[:comparison_engine] || Config.comparison_engine() || @default_adapter
+    with nil <- opts[:comparison_engine],
+      nil <- Config.comparison_engine() do
+      @default_adapter
+    end
   end
 end

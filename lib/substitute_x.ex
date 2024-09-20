@@ -4,7 +4,30 @@ defmodule SubstituteX do
   alias SubstituteX.ComparisonEngine
 
   @doc """
-  Returns true if the schema matches the term
+  Returns `true` if `left` compared to `right` by the given operator is `true`.
+
+  ### Examples
+
+      iex> SubstituteX.matches?(1, :===, 1)
+      true
+  """
+  @spec matches?(
+    left :: any(),
+    operator :: any(),
+    right :: any(),
+    opts :: keyword()
+  ) :: true | false
+  @spec matches?(
+    left :: any(),
+    operator :: any(),
+    right :: any()
+  ) :: true | false
+  def matches?(left, operator, right, opts \\ []) do
+    ComparisonEngine.operator?(operator) and ComparisonEngine.matches?(left, operator, right, opts)
+  end
+
+  @doc """
+  Returns true if all params matches the term.
 
   ### Examples
 
@@ -66,54 +89,44 @@ defmodule SubstituteX do
     true
   end
 
-  defp recurse_compare(map, [head | []], opts) do
-    recurse_compare(map, head, opts)
-  end
-
-  defp recurse_compare(map, [head | tail], opts) do
-    with true <- recurse_compare(map, head, opts) do
-      recurse_compare(map, tail, opts)
+  defp recurse_compare(list, {key, right}, opts) when is_list(list) do
+    if Keyword.keyword?(list) do
+      case Keyword.get(list, key) do
+        nil -> false
+        left -> recurse_compare(left, right, opts)
+      end
+    else
+      Enum.all?(list, fn left -> recurse_compare(left, {key, right}, opts) end)
     end
   end
 
-  defp recurse_compare([{_key, _value} | _tail] = keyword, {key, right}, opts) do
-    if ComparisonEngine.operator?(key, opts) do
-      ComparisonEngine.compare?(keyword, key, right, opts)
-    else
-      case Keyword.get(keyword, key) do
-        nil -> false
-        left -> recurse_compare(left, right, opts)
+  defp recurse_compare(left, [head | tail], opts) do
+    with true <- recurse_compare(left, head, opts) do
+      if Enum.any?(tail) do
+        recurse_compare(left, tail, opts)
+      else
+        true
       end
     end
   end
 
-  defp recurse_compare([head | []], {key, right}, opts) do
-    recurse_compare(head, {key, right}, opts)
+  defp recurse_compare(map, {key, params}, opts) when is_map(params) and (not is_struct(params)) do
+    recurse_compare(map, {key, Map.to_list(params)}, opts)
   end
 
-  defp recurse_compare([head | tail], {key, right}, opts) do
-    with true <- recurse_compare(head, {key, right}, opts) do
-      recurse_compare(tail, {key, right}, opts)
+  defp recurse_compare(map, {key, right}, opts) when is_map(map) and (not is_struct(map)) do
+    case Map.get(map, key) do
+      nil -> false
+      left -> recurse_compare(left, right, opts)
     end
   end
 
-  defp recurse_compare(map, {key, right}, opts) do
-    if ComparisonEngine.operator?(key, opts) do
-      ComparisonEngine.compare?(map, key, right, opts)
-    else
-      case Map.get(map, key) do
-        nil -> false
-        left -> recurse_compare(left, right, opts)
-      end
-    end
-  end
-
-  defp recurse_compare(left, right, opts) when is_map(right) and (not is_struct(right)) do
-    recurse_compare(left, Map.to_list(right), opts)
+  defp recurse_compare(left, {operator, right}, opts) do
+    matches?(left, operator, right, opts)
   end
 
   defp recurse_compare(left, right, opts) do
-    ComparisonEngine.compare?(left, :===, right, opts)
+    matches?(left, :===, right, opts)
   end
 
   @doc """
@@ -135,13 +148,13 @@ defmodule SubstituteX do
 
     - A literal (e.g., "hello").
 
-    - A zero-arity function invoked as `func.()`.
+    - A 0-arity function invoked as `func.()`.
 
-    - A one-arity function invoked as `func.(left)`.
+    - A 1-arity function invoked as `func.(left)`.
 
-    - A two-arity function invoked as `func.(left, operator)`.
+    - A 2-arity function invoked as `func.(left, operator)`.
 
-    - A three-arity function invoked as `func.(left, operator, right)`.
+    - A 3-arity function invoked as `func.(left, operator, right)`.
 
   ### Examples
 
@@ -176,229 +189,176 @@ defmodule SubstituteX do
   def change(left, operator, right, replacement, opts \\ [])
 
   def change(left, operator, right, replacement, opts) do
-    if ComparisonEngine.compare?(left, operator, right, opts) do
+    if matches?(left, operator, right, opts) do
       replace(replacement, left, operator, right)
     else
       left
     end
   end
 
-  # @doc """
-  # Transforms a term by schema.
+  @doc """
+  Transforms a term by schema.
 
-  # ### Options
+  ### Examples
 
-  #   * `:on_change` - Defines the function's behavior the
-  #     first time a value is changed. When set to `:halt`,
-  #     the function immediately returns the result of the
-  #     change function. If not set to `:halt`, changes
-  #     are applied in sequence.
+      iex> SubstituteX.change("foo", %{"foo" => "bar"})
+      "bar"
 
-  # ### Examples
+      iex> SubstituteX.change("foo", [%{"qux" => "bux"}, %{"foo" => "bar"}])
+      "bar"
 
-  #     iex> SubstituteX.change("foo", %{"foo" => "bar"})
-  #     "bar"
+      iex> SubstituteX.change("foo", %{"foo" => %{===: "bar"}})
+      "bar"
 
-  #     iex> SubstituteX.change("foo", [%{"qux" => "bux"}, %{"foo" => "bar"}])
-  #     "bar"
+      iex> SubstituteX.change("foo", {"foo", "bar"})
+      "bar"
 
-  #     iex> SubstituteX.change("foo", %{"foo" => %{===: "bar"}})
-  #     "bar"
+      iex> SubstituteX.change("foo", [{"qux", "bux"}, {"foo", "bar"}])
+      "bar"
 
-  #     iex> SubstituteX.change("foo", [{"qux", "bux"}, {"foo", "bar"}])
-  #     "bar"
+      iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => "bar"}})
+      %{body: "bar"}
 
-  #     iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => "bar"}})
-  #     %{body: "bar"}
+      iex> SubstituteX.change(%{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}}, %{post: %{comments: %{body: %{"foo" => "qux"}}}})
+      %{post: %{comments: [%{body: "qux"}, %{body: "bar"}]}}
 
-  #     iex> SubstituteX.change(%{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}}, %{post: %{comments: %{body: %{"foo" => "qux"}}}})
-  #     %{post: %{comments: [%{body: "qux"}, %{body: "bar"}]}}
+      iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => %{===: "bar"}}})
+      %{body: "bar"}
 
-  #     iex> SubstituteX.change(%{body: "foo"}, %{body: %{"foo" => %{===: "bar"}}})
-  #     %{body: "bar"}
+      iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => "bar"}})
+      [body: "bar"]
 
-  #     iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => "bar"}})
-  #     [body: "bar"]
+      iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => %{===: "bar"}}})
+      [body: "bar"]
 
-  #     iex> SubstituteX.change([body: "foo"], %{body: %{"foo" => %{===: "bar"}}})
-  #     [body: "bar"]
+      iex> SubstituteX.change([post: [comments: [%{body: "foo"}, %{body: "bar"}]]], %{post: %{comments: %{body: %{"foo" => "qux"}}}})
+      [post: [comments: [%{body: "qux"}, %{body: "bar"}]]]
 
-  #     iex> SubstituteX.change([post: [comments: [%{body: "foo"}, %{body: "bar"}]]], %{post: %{comments: %{body: %{"foo" => "qux"}}}})
-  #     [post: [comments: [%{body: "qux"}, %{body: "bar"}]]]
+      iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, %{body: "bar"}})
+      %{body: "bar"}
 
-  #     iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, %{body: "bar"}})
-  #     %{body: "bar"}
+      iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn -> %{body: "bar"} end})
+      %{body: "bar"}
 
-  #     iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn -> %{body: "bar"} end})
-  #     %{body: "bar"}
+      iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn %{body: "foo"} -> %{body: "bar"} end})
+      %{body: "bar"}
 
-  #     iex> SubstituteX.change(%{body: "foo"}, {%{body: "foo"}, fn %{body: "foo"} -> %{body: "bar"} end})
-  #     %{body: "bar"}
+      SubstituteX.change(
+        %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
+        {
+          %{post: %{comments: %{body: %{=~: ~r|.*|}}}},
+          fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
+        }
+      )
+      %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}
 
-  #     iex> SubstituteX.change(
-  #     ...>   %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
-  #     ...>   {
-  #     ...>     %{post: %{comments: %{body: %{=~: ~r|.*|}}}},
-  #     ...>     fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
-  #     ...>   }
-  #     ...> )
-  #     %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}
+      iex> SubstituteX.change(
+      ...>   %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
+      ...>   {
+      ...>     %{post: %{comments: %{body: :*}}},
+      ...>     fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
+      ...>   }
+      ...> )
+      %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}
+  """
+  @spec change(
+    left :: any(),
+    params :: map() | keyword() | list() | {map(), function() | any()},
+    opts :: keyword()
+  ) :: any()
+  @spec change(
+    left :: any(),
+    params :: map() | keyword() | list() | {map(), function() | any()}
+  ) :: any()
+  def change(left, params, opts \\ [])
 
-  #     iex> SubstituteX.change(
-  #     ...>   %{post: %{comments: [%{body: "foo"}, %{body: "bar"}]}},
-  #     ...>   {
-  #     ...>     %{post: %{comments: %{body: :*}}},
-  #     ...>     fn -> %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}} end
-  #     ...>   }
-  #     ...> )
-  #     %{post: %{comments: [%{body: "qux"}, %{body: "bux"}]}}
-  # """
-  # @spec change(
-  #   left :: any(),
-  #   schema :: map() | {map(), function() | any()},
-  #   opts :: keyword()
-  # ) :: any()
-  # @spec change(
-  #   left :: any(),
-  #   schema :: map() | {map(), function() | any()}
-  # ) :: any()
-  # def change(left, schema, opts \\ [])
+  def change(left, list_of_params, opts) when is_list(list_of_params) do
+    Enum.reduce(list_of_params, left, fn params, left ->
+      change(left, params, opts)
+    end)
+  end
 
-  # def change(left, {schema, replacement}, _opts) do
-  #   if compare?(left, schema) do
-  #     replace(replacement, left)
-  #   else
-  #     left
-  #   end
-  # end
+  def change(left, {params, replacement}, opts) do
+    if compare?(left, params, opts) do
+      replace(replacement, left)
+    else
+      left
+    end
+  end
 
-  # def change(left, schema, opts) when is_map(schema) do
-  #   schema = Map.to_list(schema)
+  def change(left, params, opts) when is_map(params) and (not is_struct(params)) do
+    recurse_transform(left, Map.to_list(params), opts)
+  end
 
-  #   change(left, schema, opts)
-  # end
+  defp recurse_transform(left, [head | tail], opts) do
+    left = recurse_transform(left, head, opts)
 
+    if Enum.any?(tail) do
+      recurse_transform(left, tail, opts)
+    else
+      left
+    end
+  end
 
-  # def change(left, [head | _tail] = schemas, opts) when is_map(head) or is_list(head) do
-  #   Enum.reduce_while(schemas, {false, left}, fn head, {previous_change?, left} ->
-  #     {changed?, result} = change(left, head, opts)
+  defp recurse_transform(list, {key, right}, opts) when is_list(list) do
+    if Keyword.keyword?(list) do
+      case Keyword.get(list, key) do
+        nil -> list
+        left -> Keyword.replace!(list, key, recurse_transform(left, right, opts))
+      end
+    else
+      Enum.map(list, fn left -> recurse_transform(left, {key, right}, opts) end)
+    end
+  end
 
-  #     halt_on_change? = opts[:on_change] === :halt
+  defp recurse_transform(left, {right, [head | tail]}, opts) do
+    left = recurse_transform(left, {right, head}, opts)
 
-  #     signal = if changed? and halt_on_change?, do: :halt, else: :cont
+    if Enum.any?(tail) do
+      recurse_transform(left, {right, tail}, opts)
+    else
+      left
+    end
+  end
 
-  #     {signal, {previous_change? || changed?, result}}
-  #   end)
-  # end
+  defp recurse_transform(left, {right, params}, opts) when is_map(params) and (not is_struct(params)) do
+    recurse_transform(left, {right, Map.to_list(params)}, opts)
+  end
 
-  # def change(left, schema, opts) do
-  #   recurse_change({false, left}, schema, opts)
-  # end
+  defp recurse_transform(map, {key, right}, opts) when is_map(map) and (not is_struct(map)) do
+    case Map.get(map, key) do
+      nil -> map
+      left -> Map.put(map, key, recurse_transform(left, right, opts))
+    end
+  end
 
-  # def change(left, schema) do
-  #   change(left, schema, [])
-  # end
+  defp recurse_transform(left, {right, {:*, replacement}}, _opts) do
+    replace(replacement, left, :*, right)
+  end
 
-  # defp recurse_change({changed?, []}, _value, _opts) do
-  #   {changed?, []}
-  # end
+  defp recurse_transform(left, {right, {operator, replacement}}, opts) do
+    if matches?(left, operator, right, opts) do
+      replace(replacement, left, operator, right)
+    else
+      left
+    end
+  end
 
-  # defp recurse_change({changed?, [head | tail]}, value, opts) do
-  #   {changed?, result} = recurse_change({changed?, head}, value, opts)
+  defp recurse_transform(left, {:*, replacement}, _opts) do
+    replace(replacement, left)
+  end
 
-  #   halt_on_change? = opts[:on_change] === :halt
+  defp recurse_transform(left, {right, replacement}, opts) do
+    if matches?(left, :===, right, opts) do
+      replace(replacement, left, :===, right)
+    else
+      left
+    end
+  end
 
-  #   if changed? and halt_on_change? do
-  #     {changed?, [result | tail]}
-  #   else
-  #     {changed?, rest} = recurse_change({changed?, tail}, arg, opts)
-
-  #     {changed?, [result | rest]}
-  #   end
-  # end
-
-  # defp recurse_change({changed?, left}, [], _opts) do
-  #   {changed?, left}
-  # end
-
-  # defp recurse_change({changed?, left}, [head | tail], opts) do
-  #   {changed?, result} = recurse_change({changed?, left}, head, opts)
-
-  #   halt_on_change? = opts[:on_change] === :halt
-
-  #   if changed? and halt_on_change? do
-  #     {changed?, result}
-  #   else
-  #     recurse_change({changed?, result}, tail, opts)
-  #   end
-  # end
-
-  # defp recurse_change({changed?, left}, {right, map}, opts) when is_map(map) and not is_struct(map) do
-  #   recurse_change(
-  #     {changed?, left},
-  #     {right, Map.to_list(map)},
-  #     opts
-  #   )
-  # end
-
-  # defp recurse_change({changed?, left}, {_right, []}, _opts) do
-  #   {changed?, left}
-  # end
-
-  # defp recurse_change({changed?, left}, {right, [head | tail]}, opts) do
-  #   {changed?, result} = recurse_change({changed?, left}, {right, head}, opts)
-
-  #   halt_on_change? = opts[:on_change] === :halt
-
-  #   if changed? and halt_on_change? do
-  #     {changed?, result}
-  #   else
-  #     recurse_change({changed?, result}, {right, tail}, opts)
-  #   end
-  # end
-
-  # defp recurse_change({previous_change?, map}, {key, arg}, opts) when is_map(map) and not is_struct(map) do
-  #   require IEx; IEx.pry()
-
-  #   left = Map.get(map, key)
-
-  #   {changed?, result} = change(left, arg, opts)
-
-  #   {previous_change? || changed?, Map.put(map, key, result)}
-  # end
-
-  # defp recurse_change({change?, {existing_key, left}}, {key, arg}, opts) do
-  #   if existing_key === key do
-  #     {change?, result} = recurse_change({change?, left}, arg, opts)
-
-  #     {change?, {existing_key, result}}
-  #   else
-  #     {change?, {existing_key, left}}
-  #   end
-  # end
-
-  # defp recurse_change(
-  #   {_changed?, left},
-  #   {right, {operator, replacement}},
-  #   opts
-  # ) do
-  #   if operator === :* do
-  #     {true, replace(replacement, left, operator, right)}
-  #   else
-  #     operator = opts[:operator] || operator
-  #     replacement = opts[:replacement] || replacement
-
-  #     change(left, operator, right, replacement)
-  #   end
-  # end
-
-  # defp recurse_change({changed?, left}, {right, replacement}, opts) do
-  #   recurse_change(
-  #     {changed?, left},
-  #     {right, {:===, replacement}},
-  #     opts
-  #   )
-  # end
+  defp recurse_transform(left, params, opts) when is_map(params) and (not is_struct(params)) do
+    recurse_transform(left, Map.to_list(params), opts)
+  end
 
   defp replace(replacement, left, operator, right) when is_function(replacement, 3) do
     replacement.(left, operator, right)
@@ -420,15 +380,15 @@ defmodule SubstituteX do
     replacement
   end
 
-  # defp replace(replacement, left) when is_function(replacement, 1) do
-  #   replacement.(left)
-  # end
+  defp replace(replacement, left) when is_function(replacement, 1) do
+    replacement.(left)
+  end
 
-  # defp replace(replacement, _left) when is_function(replacement, 0) do
-  #   replacement.()
-  # end
+  defp replace(replacement, _left) when is_function(replacement, 0) do
+    replacement.()
+  end
 
-  # defp replace(replacement, _left) do
-  #   replacement
-  # end
+  defp replace(replacement, _left) do
+    replacement
+  end
 end
