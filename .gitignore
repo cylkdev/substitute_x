@@ -26,6 +26,8 @@ SubstituteX-*.tar
 /tmp/
 
 # Dialyzer files
-dialyzer/*
+dialyzer/*.plt*
+
+.elixir_ls
 
 .DS_Store
