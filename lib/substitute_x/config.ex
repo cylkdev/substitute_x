@@ -3,6 +3,6 @@ defmodule SubstituteX.Config do
   @app :substitute_x
 
   @doc false
-  @spec comparison_engine :: module() | nil
-  def comparison_engine, do: Application.get_env(@app, :comparison_engine)
+  @spec engine :: module() | nil
+  def engine, do: Application.get_env(@app, :engine)
 end

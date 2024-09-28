@@ -2,6 +2,7 @@ defmodule SubstituteX.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/cylkdev/substitute_x"
+
   @version "0.1.0"
 
   def project do
@@ -11,7 +12,7 @@ defmodule SubstituteX.MixProject do
       elixir: "~> 1.0",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "Declarative comparisons and changes",
+      description: "Standardized comparisons and transformations.",
       docs: docs(),
       package: package(),
       test_coverage: [tool: ExCoveralls],
