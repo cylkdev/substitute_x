@@ -1,6 +1,5 @@
 defmodule SubstituteX.KeywordTest do
   use ExUnit.Case, async: true
-  doctest SubstituteX
 
   describe "compare?/3: " do
     test "match many values" do

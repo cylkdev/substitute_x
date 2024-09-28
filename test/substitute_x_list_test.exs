@@ -1,6 +1,5 @@
 defmodule SubstituteX.ListTest do
   use ExUnit.Case, async: true
-  doctest SubstituteX
 
   describe "compare?/3: " do
     test "match any term in a list" do
